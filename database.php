@@ -195,29 +195,36 @@ function updatePlant($id, $plantData) {
                 name = :name,
                 scientific_name = :scientific_name,
                 category_id = :category_id,
-                image = :image,
                 difficulty = :difficulty,
                 growth_time = :growth_time,
                 description = :description,
                 planting_guide = :planting_guide,
                 care_instructions = :care_instructions,
-                harvest_instructions = :harvest_instructions
-            WHERE id = :id";
+                harvest_instructions = :harvest_instructions";
     
-    $stmt = $conn->prepare($sql);
-    return $stmt->execute([
+    $params = [
         ':id' => $id,
         ':name' => $plantData['name'],
         ':scientific_name' => $plantData['scientific_name'],
         ':category_id' => $plantData['category_id'],
-        ':image' => $plantData['image'],
         ':difficulty' => $plantData['difficulty'],
         ':growth_time' => $plantData['growth_time'],
         ':description' => $plantData['description'] ?? null,
         ':planting_guide' => $plantData['planting_guide'] ?? null,
         ':care_instructions' => $plantData['care_instructions'] ?? null,
         ':harvest_instructions' => $plantData['harvest_instructions'] ?? null
-    ]);
+    ];
+    
+    // Only update image if it's provided and not empty
+    if (!empty($plantData['image'])) {
+        $sql .= ", image = :image";
+        $params[':image'] = $plantData['image'];
+    }
+    
+    $sql .= " WHERE id = :id";
+    
+    $stmt = $conn->prepare($sql);
+    return $stmt->execute($params);
 }
 
 // Delete a plant
@@ -411,36 +418,65 @@ function getAllUsers() {
 
 // Update user profile
 function updateUserProfile($id, $userData) {
-    $conn = getDbConnection();
-    
-    $sql = "UPDATE users SET 
-                full_name = :full_name,
-                bio = :bio,
-                location = :location";
-    
-    $params = [
-        ':id' => $id,
-        ':full_name' => $userData['full_name'],
-        ':bio' => $userData['bio'] ?? null,
-        ':location' => $userData['location'] ?? null
-    ];
-    
-    // Only update profile image if provided
-    if (!empty($userData['profile_image'])) {
-        $sql .= ", profile_image = :profile_image";
-        $params[':profile_image'] = $userData['profile_image'];
-    }
-    
-    // Only update password if provided
-    if (!empty($userData['password'])) {
-        $sql .= ", password = :password";
-        $params[':password'] = password_hash($userData['password'], PASSWORD_DEFAULT);
-    }
-    
-    $sql .= " WHERE id = :id";
-    
-    $stmt = $conn->prepare($sql);
-    return $stmt->execute($params);
+  $conn = getDbConnection();
+  
+  // Check if username is being changed and if it's available
+  if (!empty($userData['username']) && $userData['username'] !== getUserById($id)['username']) {
+      // Check if username already exists
+      $checkSql = "SELECT id FROM users WHERE username = :username AND id != :id";
+      $checkStmt = $conn->prepare($checkSql);
+      $checkStmt->execute([
+          ':username' => $userData['username'],
+          ':id' => $id
+      ]);
+      
+      if ($checkStmt->rowCount() > 0) {
+          // Username already taken
+          return false;
+      }
+  }
+  
+  $sql = "UPDATE users SET 
+              full_name = :full_name";
+  
+  $params = [
+      ':id' => $id,
+      ':full_name' => $userData['full_name']
+  ];
+  
+  // Add username if provided
+  if (!empty($userData['username'])) {
+      $sql .= ", username = :username";
+      $params[':username'] = $userData['username'];
+  }
+  
+  // Add optional fields if they exist
+  if (isset($userData['bio'])) {
+      $sql .= ", bio = :bio";
+      $params[':bio'] = $userData['bio'];
+  }
+  
+  if (isset($userData['location'])) {
+      $sql .= ", location = :location";
+      $params[':location'] = $userData['location'];
+  }
+  
+  // Only update profile image if provided and not empty
+  if (!empty($userData['profile_image'])) {
+      $sql .= ", profile_image = :profile_image";
+      $params[':profile_image'] = $userData['profile_image'];
+  }
+  
+  // Only update password if provided
+  if (!empty($userData['password'])) {
+      $sql .= ", password = :password";
+      $params[':password'] = password_hash($userData['password'], PASSWORD_DEFAULT);
+  }
+  
+  $sql .= " WHERE id = :id";
+  
+  $stmt = $conn->prepare($sql);
+  return $stmt->execute($params);
 }
 
 // Comment Functions
@@ -561,6 +597,179 @@ function getForumRepliesByTopicId($topicId) {
     $stmt->execute([':topic_id' => $topicId]);
     
     return $stmt->fetchAll();
+}
+
+// Article Functions
+
+// Get all articles
+function getAllArticles() {
+  $conn = getDbConnection();
+  
+  $sql = "SELECT * FROM articles ORDER BY created_at DESC";
+  $stmt = $conn->prepare($sql);
+  $stmt->execute();
+  
+  return $stmt->fetchAll();
+}
+
+// Get article by ID
+function getArticleById($id) {
+  $conn = getDbConnection();
+  
+  $sql = "SELECT * FROM articles WHERE id = :id";
+  $stmt = $conn->prepare($sql);
+  $stmt->execute([':id' => $id]);
+  
+  return $stmt->fetch();
+}
+
+// Add a new article
+function addArticle($articleData) {
+  $conn = getDbConnection();
+  
+  $sql = "INSERT INTO articles (title, excerpt, content, image, author, created_at) 
+          VALUES (:title, :excerpt, :content, :image, :author, NOW())";
+  
+  $stmt = $conn->prepare($sql);
+  $result = $stmt->execute([
+    ':title' => $articleData['title'],
+    ':excerpt' => $articleData['excerpt'],
+    ':content' => $articleData['content'],
+    ':image' => $articleData['image'] ?? '/images/article-placeholder.jpg',
+    ':author' => $articleData['author']
+  ]);
+  
+  if ($result) {
+    return $conn->lastInsertId();
+  }
+  
+  return false;
+}
+
+// Update an existing article
+function updateArticle($id, $articleData) {
+  $conn = getDbConnection();
+  
+  $sql = "UPDATE articles SET 
+            title = :title,
+            excerpt = :excerpt,
+            content = :content,
+            author = :author";
+  
+  $params = [
+    ':id' => $id,
+    ':title' => $articleData['title'],
+    ':excerpt' => $articleData['excerpt'],
+    ':content' => $articleData['content'],
+    ':author' => $articleData['author']
+  ];
+  
+  // Only update image if provided
+  if (!empty($articleData['image'])) {
+    $sql .= ", image = :image";
+    $params[':image'] = $articleData['image'];
+  }
+  
+  $sql .= " WHERE id = :id";
+  
+  $stmt = $conn->prepare($sql);
+  return $stmt->execute($params);
+}
+
+// Delete an article
+function deleteArticle($id) {
+  $conn = getDbConnection();
+  
+  $sql = "DELETE FROM articles WHERE id = :id";
+  $stmt = $conn->prepare($sql);
+  return $stmt->execute([':id' => $id]);
+}
+
+// Add these forum functions at the end of the file
+
+// Create a new forum topic
+function createForumTopic($topicData) {
+    $conn = getDbConnection();
+    
+    $sql = "INSERT INTO forum_topics (user_id, title, content, category, is_pinned, created_at) 
+            VALUES (:user_id, :title, :content, :category, 0, NOW())";
+    
+    $stmt = $conn->prepare($sql);
+    $result = $stmt->execute([
+        ':user_id' => $topicData['user_id'],
+        ':title' => $topicData['title'],
+        ':content' => $topicData['content'],
+        ':category' => $topicData['category']
+    ]);
+    
+    if ($result) {
+        return $conn->lastInsertId();
+    }
+    
+    return false;
+}
+
+// Add a reply to a forum topic
+function addForumReply($replyData) {
+    $conn = getDbConnection();
+    
+    $sql = "INSERT INTO forum_replies (topic_id, user_id, content, created_at) 
+            VALUES (:topic_id, :user_id, :content, NOW())";
+    
+    $stmt = $conn->prepare($sql);
+    $result = $stmt->execute([
+        ':topic_id' => $replyData['topic_id'],
+        ':user_id' => $replyData['user_id'],
+        ':content' => $replyData['content']
+    ]);
+    
+    if ($result) {
+        // Update the last_reply_at time for the topic
+        $updateSql = "UPDATE forum_topics SET last_reply_at = NOW() WHERE id = :topic_id";
+        $updateStmt = $conn->prepare($updateSql);
+        $updateStmt->execute([':topic_id' => $replyData['topic_id']]);
+        
+        return $conn->lastInsertId();
+    }
+    
+    return false;
+}
+
+// Delete a forum topic
+function deleteForumTopic($id, $userId) {
+    $conn = getDbConnection();
+    
+    // First delete all replies
+    $sql1 = "DELETE FROM forum_replies WHERE topic_id = :id";
+    $stmt1 = $conn->prepare($sql1);
+    $stmt1->execute([':id' => $id]);
+    
+    // Then delete the topic (only if user is the owner or an admin)
+    $sql2 = "DELETE FROM forum_topics 
+             WHERE id = :id 
+             AND (user_id = :user_id OR :user_id IN (SELECT id FROM users WHERE role = 'admin'))";
+    
+    $stmt2 = $conn->prepare($sql2);
+    return $stmt2->execute([
+        ':id' => $id,
+        ':user_id' => $userId
+    ]);
+}
+
+// Delete a forum reply
+function deleteForumReply($id, $userId) {
+    $conn = getDbConnection();
+    
+    // Only allow the reply owner or admin to delete
+    $sql = "DELETE FROM forum_replies 
+            WHERE id = :id 
+            AND (user_id = :user_id OR :user_id IN (SELECT id FROM users WHERE role = 'admin'))";
+    
+    $stmt = $conn->prepare($sql);
+    return $stmt->execute([
+        ':id' => $id,
+        ':user_id' => $userId
+    ]);
 }
 ?>
 

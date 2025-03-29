@@ -23,20 +23,21 @@ unset($category); // Break the reference
     <title>HarvestWorld - Sistem Informasi Edukasi Tanaman Pertanian</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        .hero-section {
+            background-color: rgba(169, 169, 169, 0.7); /* Gray background with transparency */
+            background-blend-mode: overlay;
+            background-size: cover;
+            background-position: center;
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <?php include 'includes/header.php'; ?>
     
-    <main class="min-h-screen bg-gradient-to-b from-green-50 to-white">
-        <!-- Hero Section -->
-        <section class="relative h-[500px] flex items-center justify-center overflow-hidden">
-            <div
-                class="absolute inset-0 bg-cover bg-center z-0"
-                style="
-                    background-image: url('/images/hero-bg.jpg');
-                    filter: brightness(0.7);
-                "
-            ></div>
+    <main>
+        <!-- Hero Section with space for background image -->
+        <section class="hero-section relative h-[500px] flex items-center justify-center">
             <div class="container relative z-10 text-center px-4">
                 <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">Sistem Informasi Edukasi Tanaman Pertanian</h1>
                 <p class="text-xl text-white mb-8 max-w-3xl mx-auto">
@@ -45,6 +46,9 @@ unset($category); // Break the reference
                 <div class="flex flex-col sm:flex-row gap-4 justify-center">
                     <a href="plants.php" class="inline-block px-6 py-3 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700">
                         Jelajahi Tanaman
+                    </a>
+                    <a href="artikel.php" class="inline-block px-6 py-3 bg-white text-gray-800 font-medium rounded-lg hover:bg-gray-100">
+                        Baca Artikel
                     </a>
                 </div>
             </div>

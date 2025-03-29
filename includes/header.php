@@ -19,15 +19,19 @@ $isLoggedIn = isset($_SESSION['user_id']);
                 <span class="text-green-600 font-bold text-xl">HarvestWorld</span>
             </a>
 
-            <!-- Desktop Navigation Links -->
-            <nav class="hidden md:flex items-center space-x-8">
+            <!-- Desktop Navigation Links - Centered -->
+            <nav class="hidden md:flex items-center justify-center flex-1 space-x-8">
                 <a href="plants.php" class="text-gray-700 hover:text-green-600 transition-colors">Tanaman</a>
+                <a href="artikel.php" class="text-gray-700 hover:text-green-600 transition-colors">Artikel</a>
                 <a href="forum.php" class="text-gray-700 hover:text-green-600 transition-colors">Forum</a>
                 <a href="about.php" class="text-gray-700 hover:text-green-600 transition-colors">Tentang Kami</a>
-                
+            </nav>
+
+            <!-- User Menu / Login Buttons -->
+            <div class="flex items-center space-x-4">
                 <?php if ($isLoggedIn): ?>
                     <div class="relative group">
-                        <button class="flex items-center space-x-2 focus:outline-none">
+                        <button class="flex items-center space-x-2 focus:outline-none" id="profile-menu-button">
                             <img 
                                 src="<?php echo htmlspecialchars($_SESSION['profile_image'] ?? '/images/default-avatar.png'); ?>" 
                                 alt="Profile" 
@@ -37,7 +41,7 @@ $isLoggedIn = isset($_SESSION['user_id']);
                             <i class="fas fa-chevron-down text-xs text-gray-500"></i>
                         </button>
                         
-                        <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden group-hover:block">
+                        <div id="profile-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden z-50">
                             <a href="profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-user mr-2"></i> Profil Saya
                             </a>
@@ -54,10 +58,10 @@ $isLoggedIn = isset($_SESSION['user_id']);
                     <a href="auth/login.php" class="text-gray-700 hover:text-green-600 transition-colors">Masuk</a>
                     <a href="auth/register.php" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">Daftar</a>
                 <?php endif; ?>
-            </nav>
+            </div>
 
             <!-- Mobile Menu Button -->
-            <div class="md:hidden">
+            <div class="md:hidden ml-4">
                 <button id="mobile-menu-button" class="text-gray-700 focus:outline-none">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
@@ -70,6 +74,9 @@ $isLoggedIn = isset($_SESSION['user_id']);
         <div class="px-4 py-3 space-y-1">
             <a href="plants.php" class="block py-2 px-4 text-gray-700 hover:bg-gray-100 rounded-md">
                 <i class="fas fa-leaf mr-2"></i> Tanaman
+            </a>
+            <a href="artikel.php" class="block py-2 px-4 text-gray-700 hover:bg-gray-100 rounded-md">
+                <i class="fas fa-newspaper mr-2"></i> Artikel
             </a>
             <a href="forum.php" class="block py-2 px-4 text-gray-700 hover:bg-gray-100 rounded-md">
                 <i class="fas fa-comments mr-2"></i> Forum
@@ -104,9 +111,54 @@ $isLoggedIn = isset($_SESSION['user_id']);
 
 <script>
     // Mobile menu toggle
-    document.getElementById('mobile-menu-button').addEventListener('click', function() {
+    document.addEventListener('DOMContentLoaded', function() {
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
         const mobileMenu = document.getElementById('mobile-menu');
-        mobileMenu.classList.toggle('hidden');
+        
+        if (mobileMenuButton && mobileMenu) {
+            mobileMenuButton.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+        
+        // Profile dropdown toggle for desktop
+        const profileMenuButton = document.getElementById('profile-menu-button');
+        const profileDropdown = document.getElementById('profile-dropdown');
+        
+        if (profileMenuButton && profileDropdown) {
+            // Toggle dropdown on click
+            profileMenuButton.addEventListener('click', function(e) {
+                e.stopPropagation();
+                profileDropdown.classList.toggle('hidden');
+            });
+            
+            // Close dropdown when clicking elsewhere
+            document.addEventListener('click', function(e) {
+                if (!profileMenuButton.contains(e.target) && !profileDropdown.contains(e.target)) {
+                    profileDropdown.classList.add('hidden');
+                }
+            });
+            
+            // Also handle hover for desktop
+            const profileContainer = profileMenuButton.parentElement;
+            
+            profileContainer.addEventListener('mouseenter', function() {
+                profileDropdown.classList.remove('hidden');
+            });
+            
+            profileContainer.addEventListener('mouseleave', function() {
+                // Small delay to allow moving to dropdown
+                setTimeout(function() {
+                    if (!profileDropdown.matches(':hover')) {
+                        profileDropdown.classList.add('hidden');
+                    }
+                }, 100);
+            });
+            
+            profileDropdown.addEventListener('mouseleave', function() {
+                profileDropdown.classList.add('hidden');
+            });
+        }
     });
 </script>
 

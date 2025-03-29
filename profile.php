@@ -1,9 +1,5 @@
 <?php
-
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
+// Start session
 session_start();
 
 // Include database connection
@@ -23,68 +19,81 @@ $user = getUserById($userId);
 $error = '';
 $success = '';
 
+// Update the profile update handling section to include username
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
-    $fullName = $_POST['full_name'] ?? '';
-    $bio = $_POST['bio'] ?? '';
-    $location = $_POST['location'] ?? '';
-    
-    if (empty($fullName)) {
-        $error = 'Nama lengkap tidak boleh kosong';
-    } else {
-        $userData = [
-            'full_name' => $fullName,
-            'bio' => $bio,
-            'location' => $location
-        ];
-        
-        // Handle profile image upload
-        if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
-            $uploadDir = 'uploads/profiles/';
-            
-            // Create directory if it doesn't exist
-            if (!file_exists($uploadDir)) {
-                mkdir($uploadDir, 0777, true);
-            }
-            
-            $fileName = $userId . '_' . time() . '_' . basename($_FILES['profile_image']['name']);
-            $uploadFile = $uploadDir . $fileName;
-            
-            // Check if file is an image
-            $imageFileType = strtolower(pathinfo($uploadFile, PATHINFO_EXTENSION));
-            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
-            
-            if (!in_array($imageFileType, $allowedExtensions)) {
-                $error = 'Hanya file JPG, JPEG, PNG, dan GIF yang diperbolehkan';
-            } elseif ($_FILES['profile_image']['size'] > 2000000) { // 2MB max
-                $error = 'Ukuran file terlalu besar (maksimal 2MB)';
-            } else {
-                if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $uploadFile)) {
-                    $userData['profile_image'] = '/' . $uploadFile;
-                } else {
-                    $error = 'Gagal mengunggah gambar profil';
-                }
-            }
-        }
-        
-        if (empty($error)) {
-            $result = updateUserProfile($userId, $userData);
-            
-            if ($result) {
-                $success = 'Profil berhasil diperbarui';
-                
-                // Update session data
-                $_SESSION['full_name'] = $fullName;
-                if (isset($userData['profile_image'])) {
-                    $_SESSION['profile_image'] = $userData['profile_image'];
-                }
-                
-                // Refresh user data
-                $user = getUserById($userId);
-            } else {
-                $error = 'Gagal memperbarui profil';
-            }
-        }
-    }
+  $fullName = $_POST['full_name'] ?? '';
+  $username = $_POST['username'] ?? '';
+  $bio = $_POST['bio'] ?? '';
+  $location = $_POST['location'] ?? '';
+  
+  if (empty($fullName) || empty($username)) {
+      $error = 'Nama lengkap dan username tidak boleh kosong';
+  } else {
+      $userData = [
+          'full_name' => $fullName,
+          'username' => $username,
+          'bio' => $bio,
+          'location' => $location
+      ];
+      
+      // Handle profile image upload
+      if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+          $uploadDir = 'uploads/profiles/';
+          
+          // Create directory if it doesn't exist
+          if (!file_exists($uploadDir)) {
+              mkdir($uploadDir, 0777, true);
+          }
+          
+          $fileName = $userId . '_' . time() . '_' . basename($_FILES['profile_image']['name']);
+          $uploadFile = $uploadDir . $fileName;
+          
+          // Check if file is an image
+          $imageFileType = strtolower(pathinfo($uploadFile, PATHINFO_EXTENSION));
+          $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
+          
+          if (!in_array($imageFileType, $allowedExtensions)) {
+              $error = 'Hanya file JPG, JPEG, PNG, dan GIF yang diperbolehkan';
+          } elseif ($_FILES['profile_image']['size'] > 2000000) { // 2MB max
+              $error = 'Ukuran file terlalu besar (maksimal 2MB)';
+          } else {
+              if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $uploadFile)) {
+                  $userData['profile_image'] = '/' . $uploadFile;
+              } else {
+                  $error = 'Gagal mengunggah gambar profil';
+              }
+          }
+      }
+      
+      if (empty($error)) {
+          $result = updateUserProfile($userId, $userData);
+          
+          if ($result) {
+              $success = 'Profil berhasil diperbarui';
+              
+              // Check if username was changed
+              if ($username !== $_SESSION['username']) {
+                  // Update session data
+                  $_SESSION['username'] = $username;
+                  $success .= '. Username telah diubah - silakan login kembali';
+                  
+                  // Log the user out after 2 seconds to refresh their session
+                  echo '<meta http-equiv="refresh" content="2;url=auth/logout.php">';
+              } else {
+                  // Update other session data
+                  $_SESSION['full_name'] = $fullName;
+                  if (isset($userData['profile_image'])) {
+                      $_SESSION['profile_image'] = $userData['profile_image'];
+                  }
+              }
+              
+              // Refresh user data
+              $user = getUserById($userId);
+          } else {
+              $error = 'Gagal memperbarui profil. Username mungkin sudah digunakan.';
+          }
+      }
+  }
 }
 
 // Handle password change
@@ -233,6 +242,18 @@ $activeTab = isset($_GET['tab']) ? $_GET['tab'] : 'profile';
                                 >
                             </div>
                             
+                            <div class="mb-4">
+                                <label for="username" class="block text-gray-700 font-medium mb-2">Username</label>
+                                <input 
+                                    type="text" 
+                                    id="username" 
+                                    name="username" 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    value="<?php echo htmlspecialchars($user['username']); ?>"
+                                >
+                                <p class="text-sm text-gray-500 mt-1">Mengubah username akan membuat Anda harus login ulang.</p>
+                            </div>
+
                             <div class="mb-4">
                                 <label for="bio" class="block text-gray-700 font-medium mb-2">Bio</label>
                                 <textarea 

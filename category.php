@@ -23,9 +23,9 @@ $searchQuery = isset($_GET['search']) ? $_GET['search'] : '';
 
 // Get difficulty filter from URL parameter
 $difficultyFilter = isset($_GET['difficulty']) ? $_GET['difficulty'] : [];
-if (!is_array($difficultyFilter)) {
-    $difficultyFilter = [$difficultyFilter];
-}
+// if (!is_array($difficultyFilter)) {
+//     $difficultyFilter = [$difficultyFilter];
+// }
 
 // Set up filters for database query
 $filters = [
@@ -164,38 +164,15 @@ function buildClearFiltersUrl() {
             <!-- Difficulty Checkboxes -->
             <div class="mb-4">
                 <p class="text-sm font-medium mb-2">Tingkat Kesulitan:</p>
-                <div class="flex flex-wrap gap-4">
-                    <label class="inline-flex items-center">
-                        <input 
-                            type="checkbox" 
-                            name="difficulty[]" 
-                            value="Mudah" 
-                            <?php echo isDifficultySelected('Mudah', $difficultyFilter) ? 'checked' : ''; ?>
-                            class="form-checkbox h-5 w-5 text-green-600"
-                        >
-                        <span class="ml-2">Mudah</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input 
-                            type="checkbox" 
-                            name="difficulty[]" 
-                            value="Sedang" 
-                            <?php echo isDifficultySelected('Sedang', $difficultyFilter) ? 'checked' : ''; ?>
-                            class="form-checkbox h-5 w-5 text-green-600"
-                        >
-                        <span class="ml-2">Sedang</span>
-                    </label>
-                    <label class="inline-flex items-center">
-                        <input 
-                            type="checkbox" 
-                            name="difficulty[]" 
-                            value="Sulit" 
-                            <?php echo isDifficultySelected('Sulit', $difficultyFilter) ? 'checked' : ''; ?>
-                            class="form-checkbox h-5 w-5 text-green-600"
-                        >
-                        <span class="ml-2">Sulit</span>
-                    </label>
-                </div>
+                <select 
+                    name="difficulty" 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                    <option value="">Semua Tingkat Kesulitan</option>
+                    <option value="Mudah" <?php echo (isset($_GET['difficulty']) && $_GET['difficulty'] === 'Mudah') ? 'selected' : ''; ?>>Mudah</option>
+                    <option value="Sedang" <?php echo (isset($_GET['difficulty']) && $_GET['difficulty'] === 'Sedang') ? 'selected' : ''; ?>>Sedang</option>
+                    <option value="Sulit" <?php echo (isset($_GET['difficulty']) && $_GET['difficulty'] === 'Sulit') ? 'selected' : ''; ?>>Sulit</option>
+                </select>
             </div>
         </form>
 
@@ -213,19 +190,18 @@ function buildClearFiltersUrl() {
                     </div>
                 <?php endif; ?>
                 
-                <?php foreach ($difficultyFilter as $difficulty): ?>
+                <?php if (!empty($_GET['difficulty'])): ?>
                     <div class="bg-green-50 text-green-800 text-sm rounded-full px-3 py-1 flex items-center">
-                        <?php echo htmlspecialchars($difficulty); ?>
+                        <?php echo htmlspecialchars($_GET['difficulty']); ?>
                         <a href="<?php 
-                            $newDifficulties = array_diff($difficultyFilter, [$difficulty]);
                             $currentParams = $_GET;
-                            $currentParams['difficulty'] = $newDifficulties;
+                            unset($currentParams['difficulty']);
                             echo '?' . http_build_query($currentParams);
                         ?>" class="ml-2 text-green-600 hover:text-green-800">
                             <i class="fas fa-times"></i>
                         </a>
                     </div>
-                <?php endforeach; ?>
+                <?php endif; ?>
                 
                 <a href="<?php echo buildClearFiltersUrl(); ?>" class="text-sm text-red-500 hover:text-red-700 flex items-center">
                     Hapus Semua
@@ -235,20 +211,20 @@ function buildClearFiltersUrl() {
 
         <!-- Filter Pills -->
         <div class="flex flex-wrap gap-2 mb-8">
-            <a href="<?php echo buildFilterUrl(['difficulty' => []]); ?>" 
+            <a href="<?php echo buildFilterUrl(['difficulty' => '']); ?>" 
                class="px-3 py-1 rounded-full border border-gray-300 text-sm <?php echo empty($difficultyFilter) ? 'bg-green-50 text-green-800' : 'text-gray-700 hover:bg-gray-100'; ?>">
                 Semua <?php echo htmlspecialchars($category['name']); ?>
             </a>
             <a href="<?php echo buildDifficultyUrl('Mudah'); ?>" 
-               class="px-3 py-1 rounded-full border border-gray-300 text-sm <?php echo isDifficultySelected('Mudah', $difficultyFilter) && count($difficultyFilter) === 1 ? 'bg-green-50 text-green-800' : 'text-gray-700 hover:bg-gray-100'; ?>">
+               class="px-3 py-1 rounded-full border border-gray-300 text-sm <?php echo (isset($_GET['difficulty']) && $_GET['difficulty'] === 'Mudah') ? 'bg-green-50 text-green-800' : 'text-gray-700 hover:bg-gray-100'; ?>">
                 Mudah Ditanam
             </a>
             <a href="<?php echo buildDifficultyUrl('Sedang'); ?>" 
-               class="px-3 py-1 rounded-full border border-gray-300 text-sm <?php echo isDifficultySelected('Sedang', $difficultyFilter) && count($difficultyFilter) === 1 ? 'bg-green-50 text-green-800' : 'text-gray-700 hover:bg-gray-100'; ?>">
+               class="px-3 py-1 rounded-full border border-gray-300 text-sm <?php echo (isset($_GET['difficulty']) && $_GET['difficulty'] === 'Sedang') ? 'bg-green-50 text-green-800' : 'text-gray-700 hover:bg-gray-100'; ?>">
                 Sedang
             </a>
             <a href="<?php echo buildDifficultyUrl('Sulit'); ?>" 
-               class="px-3 py-1 rounded-full border border-gray-300 text-sm <?php echo isDifficultySelected('Sulit', $difficultyFilter) && count($difficultyFilter) === 1 ? 'bg-green-50 text-green-800' : 'text-gray-700 hover:bg-gray-100'; ?>">
+               class="px-3 py-1 rounded-full border border-gray-300 text-sm <?php echo (isset($_GET['difficulty']) && $_GET['difficulty'] === 'Sulit') ? 'bg-green-50 text-green-800' : 'text-gray-700 hover:bg-gray-100'; ?>">
                 Sulit
             </a>
         </div>
@@ -270,19 +246,6 @@ function buildClearFiltersUrl() {
                                 <h3 class="font-semibold text-lg mb-1"><?php echo htmlspecialchars($plant['name']); ?></h3>
                                 <p class="text-sm text-gray-500 italic mb-3"><?php echo htmlspecialchars($plant['scientific_name']); ?></p>
                                 <div class="flex flex-wrap gap-2 mb-3">
-                                    <span class="<?php 
-                                        $bgColor = 'bg-emerald-100 text-emerald-800';
-                                        if ($plant['category'] === 'Buah-buahan') {
-                                            $bgColor = 'bg-orange-100 text-orange-800';
-                                        } elseif ($plant['category'] === 'Rempah-rempah') {
-                                            $bgColor = 'bg-amber-100 text-amber-800';
-                                        } elseif ($plant['category'] === 'Tanaman Hias') {
-                                            $bgColor = 'bg-purple-100 text-purple-800';
-                                        }
-                                        echo $bgColor;
-                                    ?> text-xs px-2 py-1 rounded-full">
-                                        <?php echo htmlspecialchars($plant['category']); ?>
-                                    </span>
                                     <span class="<?php 
                                         $bgColor = 'bg-green-100 text-green-800';
                                         if ($plant['difficulty'] === 'Sedang') {
